@@ -4,7 +4,7 @@
 void mainGame::imagesInit()
 {
 	//¸ÊÅø
-	IMAGEMANAGER->addFrameImage("¸ÊÅø´øÀü", "images/¸ÊÅø´øÀü.bmp", 600 * 2, 300 * 2, 12, 6, true, RGB(255, 0, 255));
+	IMAGEMANAGER->addFrameImage("¸ÊÅø", "images/¸ÊÅø.bmp", 600 * 2, 550 * 2, 12, 11, true, RGB(255, 0, 255));
 	IMAGEMANAGER->addFrameImage("¸ÊÅø¸¶À»", "images/¸ÊÅø¸¶À».bmp", 550 * 2, 250 * 2, 11, 5, true, RGB(255, 0, 255));
 	IMAGEMANAGER->addImage("¼ÀÇÃºÏ", "images/¼ÀÇÃºÏ.bmp", 826, 528, true, RGB(255, 0, 255));
 	IMAGEMANAGER->addImage("¿·¼ÀÇÃºÏ", "images/Ã¥¿·.bmp", 46, 136, true, RGB(255, 0, 255));
