@@ -11,7 +11,7 @@
 #define TILESIZEX TILESIZE * TILEX
 #define TILESIZEY TILESIZE * TILEY
 
-//타일셋 (셈플타일)
+//타일셋 (셈플타일)13
 #define SAMPLETILEX 12
 #define SAMPLETILEY 8
 

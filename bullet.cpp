@@ -36,7 +36,7 @@ void bullet::render()
 	{
 
 		//Àû ÃÑ¾Ë ·ºÆ®
-		Rectangle(getMemDC(), _viBullet->rc.left, _viBullet->rc.top, _viBullet->rc.right, _viBullet->rc.bottom);
+		//Rectangle(getMemDC(), _viBullet->rc.left, _viBullet->rc.top, _viBullet->rc.right, _viBullet->rc.bottom);
 		_viBullet->bulletImage->render(getMemDC(), _viBullet->rc.left, _viBullet->rc.top);
 	}
 }
@@ -49,18 +49,18 @@ void bullet::fire(float x, float y, int direct, float speed)
 	ZeroMemory(&bullet, sizeof(tagBullet));
 	bullet.bulletImage = new image;
 	switch (direct) {
-	case 0:bullet.bulletImage = IMAGEMANAGER->findImage("ÅÍ·¿¹Ì»çÀÏL");
-	case 1:bullet.bulletImage = IMAGEMANAGER->findImage("ÅÍ·¿¹Ì»çÀÏU");
-	case 2:bullet.bulletImage = IMAGEMANAGER->findImage("ÅÍ·¿¹Ì»çÀÏR");
-	case 3:bullet.bulletImage = IMAGEMANAGER->findImage("ÅÍ·¿¹Ì»çÀÏD");
+	case 0:bullet.bulletImage = IMAGEMANAGER->findImage("ÅÍ·¿¹Ì»çÀÏL"); break;
+	case 1:bullet.bulletImage = IMAGEMANAGER->findImage("ÅÍ·¿¹Ì»çÀÏU"); break;
+	case 2:bullet.bulletImage = IMAGEMANAGER->findImage("ÅÍ·¿¹Ì»çÀÏR"); break;
+	case 3:bullet.bulletImage = IMAGEMANAGER->findImage("ÅÍ·¿¹Ì»çÀÏD"); break;
 	}
 	bullet.speed = speed;
 	bullet.direct = direct;
 	bullet.x = bullet.fireX = x;
 	bullet.y = bullet.fireY = y;
 	bullet.rc = RectMakeCenter(bullet.x, bullet.y,
-		bullet.bulletImage->getWidth(),
-		bullet.bulletImage->getHeight());
+		bullet.bulletImage->getWidth()/2,
+		bullet.bulletImage->getHeight()/2);
 
 	//º¤ÅÍ¿¡ ´ã±â
 	_vBullet.push_back(bullet);
@@ -109,7 +109,6 @@ weapons::~weapons()
 
 HRESULT weapons::init()
 {
-
 	for (int i = 0; i < 4; i++)
 	{
 		for (int j = 0; j < 10; j++)
@@ -209,6 +208,12 @@ void weapons::move()
 	}
 }
 
+void weapons::remove(int num)
+{
+	_varrow.erase(_varrow.begin() + num);
+}
+
+
 void weapons::render()
 {
 	_viterarrow = _varrow.begin();
@@ -216,5 +221,105 @@ void weapons::render()
 	{
 		if (!_viterarrow->_isfire) continue;
 		_viterarrow->_waponimg->render(getMemDC(), _viterarrow->_rc.left, _viterarrow->_rc.top);
+	}
+}
+
+Catapultbow::Catapultbow() {}
+
+Catapultbow::~Catapultbow() {}
+
+HRESULT Catapultbow::init()
+{
+	for (int i = 0; i < 4; i++)
+	{
+		for (int j = 0; j < 10; j++)
+		{
+			if (i == 0)
+			{
+				_catapult._arrow = ARROW_LEFT;
+				_catapult._waponimg = new image;
+				_catapult._waponimg->init("images/arrow/catabow_left.bmp", 22, 5, true, RGB(255, 0, 255));
+			}
+			if (i == 1)
+			{
+				_catapult._arrow = ARROW_RIGHT;
+				_catapult._waponimg = new image;
+				_catapult._waponimg->init("images/arrow/catabow_right.bmp", 22, 5, true, RGB(255, 0, 255));
+			}
+			if (i == 2)
+			{
+				_catapult._arrow = ARROW_UP;
+				_catapult._waponimg = new image;
+				_catapult._waponimg->init("images/arrow/catabow_up.bmp", 5, 22, true, RGB(255, 0, 255));
+			}
+			if (i == 3)
+			{
+				_catapult._arrow = ARROW_DOWN;
+				_catapult._waponimg = new image;
+				_catapult._waponimg->init("images/arrow/catabow_down.bmp", 5, 22, true, RGB(255, 0, 255));
+			}
+		}
+	}
+	return S_OK;
+}
+
+void Catapultbow::release()
+{
+}
+
+void Catapultbow::update()
+{
+	move();
+}
+
+
+void Catapultbow::fire(float x, float y, WEAPONMOVE weponMove)
+{
+	for (_itercatapultarrpw = _catapultarrpw.begin(); _itercatapultarrpw != _catapultarrpw.end(); ++_itercatapultarrpw)
+	{
+		if (_catapult._isfire)  continue;
+		if (_catapult._arrow == weponMove)
+		{
+			_catapult._isfire = true;
+			_catapult.x = _catapult.fireX = x;
+			_catapult.y = _catapult.fireY = y;
+			_catapult._rc = RectMakeCenter(_catapult._rc.left, _catapult._rc.top, _catapult._waponimg->getWidth(), _catapult._waponimg->getHeight());
+		}
+	}
+}
+
+void Catapultbow::move()
+{
+	for (_itercatapultarrpw = _catapultarrpw.begin(); _itercatapultarrpw != _catapultarrpw.end(); ++_itercatapultarrpw)
+	{
+		if (!_catapult._isfire)   continue;
+
+		if (_catapult._arrow == ARROW_LEFT)
+		{
+			_itercatapultarrpw->x -= _itercatapultarrpw->_spped;
+		}
+		if (_catapult._arrow == ARROW_RIGHT)
+		{
+			_itercatapultarrpw->x += _itercatapultarrpw->_spped;
+
+		}
+		if (_catapult._arrow == ARROW_UP)
+		{
+			_itercatapultarrpw->y -= _itercatapultarrpw->_spped;
+		}
+		if (_catapult._arrow == ARROW_DOWN)
+		{
+			_itercatapultarrpw->y += _itercatapultarrpw->_spped;
+		}
+		_itercatapultarrpw->_rc = RectMakeCenter(_itercatapultarrpw->x, _itercatapultarrpw->y, _itercatapultarrpw->_waponimg->getWidth(), _itercatapultarrpw->_waponimg->getHeight());
+	}
+}
+
+
+void Catapultbow::render()
+{
+	for (_itercatapultarrpw = _catapultarrpw.begin(); _itercatapultarrpw != _catapultarrpw.end(); ++_itercatapultarrpw)
+	{
+		_catapult._waponimg->render(getMemDC(), _catapult._rc.left, _catapult._rc.top);
 	}
 }

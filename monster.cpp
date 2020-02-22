@@ -42,8 +42,14 @@ HRESULT monster::init(
 	_range = range;
 	_currentHp = currentHp;
 	_speed = speed;
-	_atkCount = atkCount;
-	item = ITEMMANAGER->addItem("³ª¹µ°¡Áö");
+	switch (_monType) {
+	case 0:_item = ITEMMANAGER->addItem("ÀÌ»¡¼®"); break;
+	case 1:_item = ITEMMANAGER->addItem("¼ýµ¹"); break;
+	case 2:_item = ITEMMANAGER->addItem("¼è¸·´ë±â"); break;
+	case 3:_item = ITEMMANAGER->addItem("³ª¹µ°¡Áö"); break;
+	case 4:_item = ITEMMANAGER->addItem("Ãµ"); break;
+	case 5:_item = ITEMMANAGER->addItem("¼öÁ¤È­ µÈ ¿¡³ÊÁö"); break;
+	}
 	//ÀÌ¹ÌÁö ¹üÀ§
 	iRc = RectMakeCenter(_x, _y, _monsterImg->getFrameWidth(), _monsterImg->getFrameHeight());
 	//ÇÇ°Ý ¹üÀ§
@@ -52,7 +58,7 @@ HRESULT monster::init(
 	count = 0;					//Ä«¿îÆ®
 
 	_hpBar = new monsterProgressBar;
-	_hpBar->init("images/monster/progressBarFront.bmp", "images/monster/progressBarBack.bmp", 0, 0, 50, 10);
+	_hpBar->init("Ã¼·Â¹Ù¾Õ", "Ã¼·Â¹ÙµÚ", 0, 0, 50, 10);
 	_hpBar->setGauge(_currentHp, _hp);
 	_hpBar->setX(x - 25);
 	_hpBar->setY(y - 70);
@@ -66,8 +72,10 @@ HRESULT monster::init(
 		golemSoldierDirectImg();
 		break;
 	case MONSTER_TYPE_FLYINGGOLEM:
+		flyingGolemDirectImg();
 		break;
 	case MONSTER_TYPE_SLIME:
+		slimeDirectImg();
 		break;
 	case MONSTER_TYPE_SLIMEGAUNTLET:
 		slimeGauntletDirectImg();
@@ -134,7 +142,6 @@ void monster::update()
 	atkCount--;
 	if (_monState == MONSTER_STATE_MOVE)
 	{
-
 		move(_monType);
 	}
 	else if (atkCount <= 0) {
@@ -142,20 +149,41 @@ void monster::update()
 		//atkCount = _atkCount;
 	}
 
+	//³Ë¹éÄ«¿îÆ®
+	if (_monType == 1 || _monType == 2 || _monType == 3) {
+		if (knockCount > 0) {
+			if (PLAYER->getPlayerX() >= _currentX)
+			{
+				_currentX -= 5;
+			}
+			if (PLAYER->getPlayerY() >= _currentY)
+			{
+				_currentY -= 5;
+			}
+			if (PLAYER->getPlayerX() <= _currentX)
+			{
+				_currentX += 5;
+			}
+			if (PLAYER->getPlayerY() >= _currentY)
+			{
+				_currentY += 5;
+			}
+			knockCount -= 1;
+		}
+	}
 	//hp¹Ù À§Ä¡°»½Å
 	_hpBar->setX(_currentX - 25);
 	_hpBar->setY(_currentY - 70);
 	//hp¹Ù Ãâ·Â
 	viewProgressBar();
 
-	item.update();
+	_item.update();
 	hit(_monType, _monDirect);
 	die(_monType);
 }
 
 void monster::render()
 {
-
 	draw();
 }
 
@@ -163,11 +191,11 @@ void monster::render()
 void monster::draw()
 {
 
-	//¸ó½ºÅÍ °ø°Ý¹üÀ§
-	//Rectangle(getMemDC(), aRc.left, aRc.top, aRc.right, aRc.bottom);
+
 	if (KEYMANAGER->isToggleKey('P'))
 	{
-
+		//¸ó½ºÅÍ °ø°Ý¹üÀ§
+		Rectangle(getMemDC(), aRc.left, aRc.top, aRc.right, aRc.bottom);
 		//¸ó½ºÅÍ ÀÌ¹ÌÁö ¹üÀ§
 		//Rectangle(getMemDC(), iRc.left, iRc.top, iRc.right, iRc.bottom);
 		//¸ó½ºÅÍ ÇÇ°Ý¹üÀ§
@@ -178,13 +206,13 @@ void monster::draw()
 	_monsterImg->aniRender(getMemDC(), iRc.left, iRc.top, _ani);
 
 	_hpBar->render();
-	item.render();
-	char str[128];
+	_item.render();
+	/*char str[128];
 	sprintf_s(str, "%d", _currentHp);
 	TextOut(getMemDC(), _x, _y, str, strlen(str));
 	char str1[128];
 	sprintf_s(str1, "%d", _monState);
-	TextOut(getMemDC(), _x, _y + 50, str1, strlen(str1));
+	TextOut(getMemDC(), _x, _y + 50, str1, strlen(str1));*/
 
 }
 
@@ -199,16 +227,17 @@ bool monster::attack(MONSTER_TYPE monType, MONSTER_DIRECTION monDirect)
 	case MONSTER_TYPE_GOLEMSOLDIER:
 		golemSoldierAtk(monType, monDirect);
 		break;
+	case MONSTER_TYPE_FLYINGGOLEM:
+		flyingGolemAtk(monType, monDirect);
+		break;
 	case MONSTER_TYPE_SLIMEGAUNTLET:
 		slimeGauntletAtk(monType, monDirect);
 		break;
+	case MONSTER_TYPE_SLIME:
+		slimeAtk(monType, monDirect);
+		break;
 	case MONSTER_TYPE_GOLEMBOSS:
-		//if (getDistance(_currentX, _currentY, PLAYER->getPlayerX(), PLAYER->getPlayerY()) < 400) {
-		golemBossAtk1(monType, monDirect);
-		//}
-		//else {
-		//	golemBossAtk2(monType, monDirect);
-		//}
+		golemBossAtk(monType, monDirect);
 		break;
 	}
 
@@ -226,8 +255,14 @@ bool monster::hit(MONSTER_TYPE monType, MONSTER_DIRECTION monDirect)
 	case MONSTER_TYPE_GOLEMSOLDIER:
 		golemSoldierHit(monType, monDirect);
 		break;
+	case MONSTER_TYPE_FLYINGGOLEM:
+		flyginGolemHit(monType, monDirect);
+		break;
 	case MONSTER_TYPE_SLIMEGAUNTLET:
 		slimeGauntletHit(monType, monDirect);
+		break;
+	case MONSTER_TYPE_SLIME:
+		slimeHit(monType, monDirect);
 		break;
 	case MONSTER_TYPE_GOLEMBOSS:
 		golemBossHit(monType, monDirect);
@@ -248,10 +283,24 @@ bool monster::move(MONSTER_TYPE monType)
 			imgCount = 0;
 		}
 		break;
+	case MONSTER_TYPE_FLYINGGOLEM:
+		flyingGolemMove();
+		if (imgCount > 20) {
+			flyingGolemDirectImg();
+			imgCount = 0;
+		}
+		break;
 	case MONSTER_TYPE_GOLEMBOSS:
 		golemBossMove();
 		if (imgCount > 20) {
 			golemBossDirectImg();
+			imgCount = 0;
+		}
+		break;
+	case MONSTER_TYPE_SLIME:
+		slimeMove();
+		if (imgCount > 10) {
+			slimeDirectImg();
 			imgCount = 0;
 		}
 		break;
@@ -270,8 +319,14 @@ bool monster::die(MONSTER_TYPE monType)
 		case MONSTER_TYPE_GOLEMSOLDIER:
 			golemSoldierDie(monType);
 			break;
+		case MONSTER_TYPE_FLYINGGOLEM:
+			flyingGolemDie(monType);
+			break;
 		case MONSTER_TYPE_SLIMEGAUNTLET:
 			slimeGauntletDie(monType);
+			break;
+		case MONSTER_TYPE_SLIME:
+			slimeDie(monType);
 			break;
 		case MONSTER_TYPE_GOLEMBOSS:
 			golemBossDie(monType);
@@ -331,6 +386,20 @@ void monster::golemSoldierDirectImg()
 		ANIMATIONMANAGER->start("°ñ·½¼ÖÀúB");
 		break;
 	}
+}
+
+void monster::flyingGolemDirectImg()
+{
+	_monsterImg = IMAGEMANAGER->findImage("ÇÃ¶óÀ×°ñ·½");
+	_ani = ANIMATIONMANAGER->findAnimation("ÇÃ¶óÀ×°ñ·½ÀÌµ¿");
+	ANIMATIONMANAGER->start("ÇÃ¶óÀ×°ñ·½ÀÌµ¿");
+}
+
+void monster::slimeDirectImg()
+{
+	_monsterImg = IMAGEMANAGER->findImage("½½¶óÀÓ");
+	_ani = ANIMATIONMANAGER->findAnimation("½½¶óÀÓÀÌµ¿");
+	ANIMATIONMANAGER->start("½½¶óÀÓÀÌµ¿");
 }
 
 void monster::slimeGauntletDirectImg()
@@ -393,7 +462,7 @@ bool monster::golemTurretAtk(MONSTER_TYPE monType, MONSTER_DIRECTION monDirect)
 	{
 		_monsterImg = IMAGEMANAGER->findImage("°ñ·½ÅÍ·¿");
 		hRc = RectMakeCenter(_currentX, _currentY,
-			_monsterImg->getFrameWidth(), _monsterImg->getFrameHeight());
+			_monsterImg->getFrameWidth() / 2, _monsterImg->getFrameHeight() / 2);
 		switch (monDirect) {
 		case MONSTER_DIRECTION_LEFT:
 			_ani = ANIMATIONMANAGER->findAnimation("°ñ·½ÅÍ·¿L");
@@ -497,12 +566,85 @@ bool monster::golemSoldierAtk(MONSTER_TYPE monType, MONSTER_DIRECTION monDirect)
 	return false;
 }
 
+bool monster::flyingGolemAtk(MONSTER_TYPE monType, MONSTER_DIRECTION monDirect)
+{
+	if (getDistance(_currentX, _currentY, PLAYER->getPlayerX(), PLAYER->getPlayerY()) < 150)
+	{
+		count--;
+	}
+
+	//Ä«¿îÆ®°¡ 0ÀÏ¶§ °ø°Ý
+	if (count < 0)
+	{
+		_monState = MONSTER_STATE_ATK;
+		_monsterImg = IMAGEMANAGER->findImage("ÇÃ¶óÀ×°ñ·½");
+		aRc = RectMakeCenter((hRc.left + hRc.right) / 2, (hRc.top + hRc.bottom) / 2,
+			_monsterImg->getFrameWidth() / 2, _monsterImg->getFrameHeight() / 2);
+		_ani = ANIMATIONMANAGER->findAnimation("ÇÃ¶óÀ×°ñ·½°ø°Ý");
+		ANIMATIONMANAGER->start("ÇÃ¶óÀ×°ñ·½°ø°Ý");
+
+		count = 120;
+		atkCount = 150;
+		RECT rc;
+		if (IntersectRect(&rc, &aRc, &PLAYER->getPlayercollision()))
+		{
+			PLAYER->setHP(PLAYER->getHP() - _atk);
+		}
+		return true;
+	}
+	atkCount--;
+	if (atkCount < 0)
+	{
+		_monState = MONSTER_STATE_MOVE;
+		atkCount = 150;
+	}
+
+
+	return false;
+}
+bool monster::slimeAtk(MONSTER_TYPE monType, MONSTER_DIRECTION monDirect)
+{
+	if (getDistance(_currentX, _currentY, PLAYER->getPlayerX(), PLAYER->getPlayerY()) < 50)
+	{
+		count--;
+	}
+
+	//Ä«¿îÆ®°¡ 0ÀÏ¶§ °ø°Ý
+	if (count < 0)
+	{
+		_monState = MONSTER_STATE_ATK;
+		_monsterImg = IMAGEMANAGER->findImage("½½¶óÀÓ");
+		aRc = RectMakeCenter((hRc.left + hRc.right) / 2, (hRc.top + hRc.bottom) / 2,
+			_monsterImg->getFrameWidth() / 2, _monsterImg->getFrameHeight() / 2);
+		_ani = ANIMATIONMANAGER->findAnimation("½½¶óÀÓ°ø°Ý");
+		ANIMATIONMANAGER->start("½½¶óÀÓ°ø°Ý");
+
+		count = 120;
+		atkCount = 150;
+		RECT rc;
+		if (IntersectRect(&rc, &aRc, &PLAYER->getPlayercollision()))
+		{
+			PLAYER->setHP(PLAYER->getHP() - _atk);
+		}
+		return true;
+	}
+	atkCount--;
+	if (atkCount < 0)
+	{
+		_monState = MONSTER_STATE_MOVE;
+		atkCount = 150;
+	}
+
+
+	return false;
+}
+
 bool monster::slimeGauntletAtk(MONSTER_TYPE monType, MONSTER_DIRECTION monDirect)
 {
 
 	count++;
 	//°ø°ÝÄ«¿îÆ®
-	if (count >= 140)
+	if (count >= 200)
 	{
 		_monsterImg = IMAGEMANAGER->findImage("½½¶óÀÓ°ÇÆ²·¿");
 
@@ -512,33 +654,32 @@ bool monster::slimeGauntletAtk(MONSTER_TYPE monType, MONSTER_DIRECTION monDirect
 		switch (monDirect) {
 		case MONSTER_DIRECTION_LEFT:
 			aRc = RectMakeCenter((hRc.left + hRc.right) / 2 - 100, (hRc.top + hRc.bottom) / 2,
-				_monsterImg->getFrameWidth() / 2, _monsterImg->getFrameHeight() / 2);
+				_monsterImg->getFrameWidth() / 2, _monsterImg->getFrameHeight() / 4);
 			_ani = ANIMATIONMANAGER->findAnimation("½½¶óÀÓ°ÇÆ²·¿°ø°ÝL");
 			ANIMATIONMANAGER->start("½½¶óÀÓ°ÇÆ²·¿°ø°ÝL");
 			break;
 		case MONSTER_DIRECTION_UP:
 
 			aRc = RectMakeCenter((hRc.left + hRc.right) / 2, (hRc.top + hRc.bottom) / 2 - 100,
-				_monsterImg->getFrameWidth() / 2, _monsterImg->getFrameHeight() / 2);
+				_monsterImg->getFrameWidth() / 4, _monsterImg->getFrameHeight() / 2);
 			_ani = ANIMATIONMANAGER->findAnimation("½½¶óÀÓ°ÇÆ²·¿°ø°ÝU");
 			ANIMATIONMANAGER->start("½½¶óÀÓ°ÇÆ²·¿°ø°ÝU");
 			break;
 		case MONSTER_DIRECTION_RIGHT:
 
 			aRc = RectMakeCenter((hRc.left + hRc.right) / 2 + 100, (hRc.top + hRc.bottom) / 2,
-				_monsterImg->getFrameWidth() / 2, _monsterImg->getFrameHeight() / 2);
+				_monsterImg->getFrameWidth() / 2, _monsterImg->getFrameHeight() / 4);
 			_ani = ANIMATIONMANAGER->findAnimation("½½¶óÀÓ°ÇÆ²·¿°ø°ÝR");
 			ANIMATIONMANAGER->start("½½¶óÀÓ°ÇÆ²·¿°ø°ÝR");
 			break;
 		case MONSTER_DIRECTION_DOWN:
 
 			aRc = RectMakeCenter((hRc.left + hRc.right) / 2, (hRc.top + hRc.bottom) / 2 + 100,
-				_monsterImg->getFrameWidth() / 2, _monsterImg->getFrameHeight() / 2);
+				_monsterImg->getFrameWidth() / 4, _monsterImg->getFrameHeight() / 2);
 			_ani = ANIMATIONMANAGER->findAnimation("½½¶óÀÓ°ÇÆ²·¿°ø°ÝB");
 			ANIMATIONMANAGER->start("½½¶óÀÓ°ÇÆ²·¿°ø°ÝB");
 			break;
 		}
-		_ani->setFPS(14.0f);
 
 		count = 0;
 
@@ -554,7 +695,7 @@ bool monster::slimeGauntletAtk(MONSTER_TYPE monType, MONSTER_DIRECTION monDirect
 	return false;
 }
 
-bool monster::golemBossAtk1(MONSTER_TYPE monType, MONSTER_DIRECTION monDirect)
+bool monster::golemBossAtk(MONSTER_TYPE monType, MONSTER_DIRECTION monDirect)
 {
 
 	count++;
@@ -564,70 +705,59 @@ bool monster::golemBossAtk1(MONSTER_TYPE monType, MONSTER_DIRECTION monDirect)
 	if (count > 300)
 	{
 		_monState = MONSTER_STATE_ATK;
-		if (getDistance(_currentX, _currentY, PLAYER->getPlayerX(), PLAYER->getPlayerY()) < 400) {
-			_monsterImg = IMAGEMANAGER->findImage("°ñ·½º¸½º°ø°Ý1");
-			iRc = RectMakeCenter((hRc.right + hRc.left) / 2 - 200, (hRc.bottom + hRc.top) / 2 - 200, hRc.right - hRc.left, hRc.bottom - hRc.top);
+		if (getDistance(_currentX, _currentY, PLAYER->getPlayerX(), PLAYER->getPlayerY()) < 300) {
+
 			switch (monDirect) {
 			case MONSTER_DIRECTION_LEFT:
-
-				aRc = RectMakeCenter((hRc.left + hRc.right) / 2 - 100, (hRc.top + hRc.bottom) / 2,
-					_monsterImg->getFrameWidth() / 2, _monsterImg->getFrameHeight() / 2);
+				aRc = RectMakeCenter((hRc.left + hRc.right) / 2 - 100, (hRc.top + hRc.bottom) / 2 + 100,
+					_monsterImg->getFrameWidth() / 4, _monsterImg->getFrameHeight() / 4);
 				_ani = ANIMATIONMANAGER->findAnimation("°ñ·½º¸½º°ø°Ý1L");
 				ANIMATIONMANAGER->start("°ñ·½º¸½º°ø°Ý1L");
 
 				break;
 			case MONSTER_DIRECTION_UP:
-
-				aRc = RectMakeCenter((hRc.left + hRc.right) / 2, (hRc.top + hRc.bottom) / 2 - 100,
-					_monsterImg->getFrameWidth() / 2, _monsterImg->getFrameHeight() / 2);
+				aRc = RectMakeCenter((hRc.left + hRc.right) / 2, (hRc.top + hRc.bottom) / 2,
+					_monsterImg->getFrameWidth() / 4, _monsterImg->getFrameHeight() / 4);
 				_ani = ANIMATIONMANAGER->findAnimation("°ñ·½º¸½º°ø°Ý1U");
 				ANIMATIONMANAGER->start("°ñ·½º¸½º°ø°Ý1U");
 				break;
 			case MONSTER_DIRECTION_RIGHT:
-
-				aRc = RectMakeCenter((hRc.left + hRc.right) / 2 + 100, (hRc.top + hRc.bottom) / 2,
-					_monsterImg->getFrameWidth() / 2, _monsterImg->getFrameHeight() / 2);
+				aRc = RectMakeCenter((hRc.left + hRc.right) / 2 + 100, (hRc.top + hRc.bottom) / 2 + 100,
+					_monsterImg->getFrameWidth() / 4, _monsterImg->getFrameHeight() / 4);
 				_ani = ANIMATIONMANAGER->findAnimation("°ñ·½º¸½º°ø°Ý1R");
 				ANIMATIONMANAGER->start("°ñ·½º¸½º°ø°Ý1R");
 				break;
 			case MONSTER_DIRECTION_DOWN:
-
 				aRc = RectMakeCenter((hRc.left + hRc.right) / 2, (hRc.top + hRc.bottom) / 2 + 100,
-					_monsterImg->getFrameWidth() / 2, _monsterImg->getFrameHeight() / 2);
+					_monsterImg->getFrameWidth() / 4, _monsterImg->getFrameHeight() / 4);
 				_ani = ANIMATIONMANAGER->findAnimation("°ñ·½º¸½º°ø°Ý1B");
 				ANIMATIONMANAGER->start("°ñ·½º¸½º°ø°Ý1B");
 				break;
 			}
 		}
 		else {
-			_monsterImg = IMAGEMANAGER->findImage("°ñ·½º¸½º°ø°Ý2");
-			iRc = RectMakeCenter((hRc.right + hRc.left) / 2 - 200, (hRc.bottom + hRc.top) / 2 - 200, hRc.right - hRc.left, hRc.bottom - hRc.top);
 			switch (monDirect) {
 			case MONSTER_DIRECTION_LEFT:
-
-				aRc = RectMakeCenter((hRc.left + hRc.right) / 2 - 100, (hRc.top + hRc.bottom) / 2,
+				aRc = RectMakeCenter((hRc.left + hRc.right) / 2 - 200, (hRc.top + hRc.bottom) / 2 + 100,
 					_monsterImg->getFrameWidth() / 2, _monsterImg->getFrameHeight() / 2);
 				_ani = ANIMATIONMANAGER->findAnimation("°ñ·½º¸½º°ø°Ý2L");
 				ANIMATIONMANAGER->start("°ñ·½º¸½º°ø°Ý2L");
 
 				break;
 			case MONSTER_DIRECTION_UP:
-
-				aRc = RectMakeCenter((hRc.left + hRc.right) / 2, (hRc.top + hRc.bottom) / 2 - 100,
+				aRc = RectMakeCenter((hRc.left + hRc.right) / 2, (hRc.top + hRc.bottom) / 2,
 					_monsterImg->getFrameWidth() / 2, _monsterImg->getFrameHeight() / 2);
 				_ani = ANIMATIONMANAGER->findAnimation("°ñ·½º¸½º°ø°Ý2U");
 				ANIMATIONMANAGER->start("°ñ·½º¸½º°ø°Ý2U");
 				break;
 			case MONSTER_DIRECTION_RIGHT:
-
-				aRc = RectMakeCenter((hRc.left + hRc.right) / 2 + 100, (hRc.top + hRc.bottom) / 2,
+				aRc = RectMakeCenter((hRc.left + hRc.right) / 2 + 100, (hRc.top + hRc.bottom) / 2 + 100,
 					_monsterImg->getFrameWidth() / 2, _monsterImg->getFrameHeight() / 2);
 				_ani = ANIMATIONMANAGER->findAnimation("°ñ·½º¸½º°ø°Ý2R");
 				ANIMATIONMANAGER->start("°ñ·½º¸½º°ø°Ý2R");
 				break;
 			case MONSTER_DIRECTION_DOWN:
-
-				aRc = RectMakeCenter((hRc.left + hRc.right) / 2, (hRc.top + hRc.bottom) / 2 + 100,
+				aRc = RectMakeCenter((hRc.left + hRc.right) / 2, (hRc.top + hRc.bottom) / 2 + 200,
 					_monsterImg->getFrameWidth() / 2, _monsterImg->getFrameHeight() / 2);
 				_ani = ANIMATIONMANAGER->findAnimation("°ñ·½º¸½º°ø°Ý2B");
 				ANIMATIONMANAGER->start("°ñ·½º¸½º°ø°Ý2B");
@@ -635,7 +765,7 @@ bool monster::golemBossAtk1(MONSTER_TYPE monType, MONSTER_DIRECTION monDirect)
 			}
 		}
 		count = 0;
-		atkCount = 30;
+		atkCount = 120;
 		RECT rc;
 		if (IntersectRect(&rc, &aRc, &PLAYER->getPlayercollision()))
 		{
@@ -647,7 +777,7 @@ bool monster::golemBossAtk1(MONSTER_TYPE monType, MONSTER_DIRECTION monDirect)
 	if (atkCount == 0)
 	{
 		_monState = MONSTER_STATE_MOVE;
-		atkCount = 30;
+		atkCount = 120;
 	}
 
 	return false;
@@ -676,9 +806,23 @@ bool monster::golemSoldierMove()
 	return false;
 }
 
-bool monster::golemBossMove()
+bool monster::slimeMove()
 {
+	if (_currentX < PLAYER->getPlayerX())_currentX += 2;
+	if (_currentX > PLAYER->getPlayerX())_currentX -= 2;
+	if (_currentY < PLAYER->getPlayerY())_currentY += 2;
+	if (_currentY > PLAYER->getPlayerY())_currentY -= 2;
 
+	//ÀÌ¹ÌÁö¹üÀ§
+	iRc = RectMakeCenter(_currentX, _currentY, _monsterImg->getFrameWidth(), _monsterImg->getFrameHeight());
+	//ÇÇ°Ý¹üÀ§
+	hRc = RectMakeCenter(_currentX, _currentY, _monsterImg->getFrameWidth() / 4, _monsterImg->getFrameHeight() / 4);
+
+	return false;
+}
+
+bool monster::flyingGolemMove()
+{
 	if (_currentX < PLAYER->getPlayerX())_currentX += 1;
 	if (_currentX > PLAYER->getPlayerX())_currentX -= 1;
 	if (_currentY < PLAYER->getPlayerY())_currentY += 1;
@@ -692,17 +836,42 @@ bool monster::golemBossMove()
 	return false;
 }
 
-bool monster::golemTurretHit(MONSTER_TYPE monType, MONSTER_DIRECTION monDirect)
+bool monster::golemBossMove()
 {
 
+	if (_currentX < PLAYER->getPlayerX())_currentX += 1;
+	if (_currentX > PLAYER->getPlayerX())_currentX -= 1;
+	if (_currentY < PLAYER->getPlayerY())_currentY += 1;
+	if (_currentY > PLAYER->getPlayerY())_currentY -= 1;
+
+	//ÀÌ¹ÌÁö¹üÀ§
+	iRc = RectMakeCenter(_currentX, _currentY, _monsterImg->getFrameWidth(), _monsterImg->getFrameHeight());
+	//ÇÇ°Ý¹üÀ§
+	hRc = RectMakeCenter(_currentX, _currentY, _monsterImg->getFrameWidth() / 4, _monsterImg->getFrameHeight() / 4);
+
+	return false;
+}
+
+bool monster::golemTurretHit(MONSTER_TYPE monType, MONSTER_DIRECTION monDirect)
+{
+	//Ã¼·Â±ð±â
 	hitCount++;
-	if (hitCount > 20)
+	if (hitCount > 10)
 	{
 		RECT temp;
-
-		if (IntersectRect(&temp, &hRc, &PLAYER->getPlayercollision()))
+		if (IntersectRect(&temp, &hRc, &PLAYER->getattacksword()))
 		{
 			_currentHp = _currentHp - 10;
+		}
+		for (int i = 0; i < PLAYER->getweapon()->getvarrow().size(); i++)
+		{
+			RECT TTemp;
+			if (IntersectRect(&TTemp, &hRc, &PLAYER->getweapon()->getvarrow()[i]._rc))
+			{
+				_currentHp = _currentHp - 50;
+				PLAYER->getweapon()->remove(i);
+				break;
+			}
 		}
 		hitCount = 0;
 	}
@@ -711,15 +880,91 @@ bool monster::golemTurretHit(MONSTER_TYPE monType, MONSTER_DIRECTION monDirect)
 
 bool monster::golemSoldierHit(MONSTER_TYPE monType, MONSTER_DIRECTION monDirect)
 {
-
+	//Ã¼·Â±ð±â
 	hitCount++;
 	if (hitCount > 20)
 	{
 		RECT temp;
 
-		if (IntersectRect(&temp, &hRc, &PLAYER->getPlayercollision()))
+		if (IntersectRect(&temp, &hRc, &PLAYER->getattacksword()))
 		{
 			_currentHp = _currentHp - 10;
+			//³Ë¹é
+			if (_monState == MONSTER_STATE_MOVE) {
+				knockCount = 15;
+			}
+		}
+		for (int i = 0; i < PLAYER->getweapon()->getvarrow().size(); i++)
+		{
+			if (IntersectRect(&temp, &hRc, &PLAYER->getweapon()->getvarrow()[i]._rc))
+			{
+				_currentHp = _currentHp - 50;
+				PLAYER->getweapon()->remove(i);
+				break;
+			}
+		}
+		hitCount = 0;
+	}
+
+	return false;
+}
+
+bool monster::flyginGolemHit(MONSTER_TYPE monType, MONSTER_DIRECTION monDirect)
+{
+	//Ã¼·Â±ð±â
+	hitCount++;
+	if (hitCount > 20)
+	{
+		RECT temp;
+
+		if (IntersectRect(&temp, &hRc, &PLAYER->getattacksword()))
+		{
+			_currentHp = _currentHp - 10;
+			//³Ë¹é
+			if (_monState == MONSTER_STATE_MOVE) {
+				knockCount = 15;
+			}
+		}
+		for (int i = 0; i < PLAYER->getweapon()->getvarrow().size(); i++)
+		{
+			if (IntersectRect(&temp, &hRc, &PLAYER->getweapon()->getvarrow()[i]._rc))
+			{
+				_currentHp = _currentHp - 50;
+				PLAYER->getweapon()->remove(i);
+				break;
+			}
+		}
+		hitCount = 0;
+	}
+
+	return false;
+}
+
+bool monster::slimeHit(MONSTER_TYPE monType, MONSTER_DIRECTION monDirect)
+{
+	//Ã¼·Â±ð±â
+	hitCount++;
+	if (hitCount > 20)
+	{
+		RECT temp;
+
+		if (IntersectRect(&temp, &hRc, &PLAYER->getattacksword()))
+		{
+			_currentHp = _currentHp - 10;
+			//³Ë¹é
+			if (_monState == MONSTER_STATE_MOVE) {
+				knockCount = 15;
+			}
+		
+			for (int i = 0; i < PLAYER->getweapon()->getvarrow().size(); i++)
+			{
+				if (IntersectRect(&temp, &hRc, &PLAYER->getweapon()->getvarrow()[i]._rc))
+				{
+					_currentHp = _currentHp - 50;
+					PLAYER->getweapon()->remove(i);
+					break;
+				}
+			}
 		}
 		hitCount = 0;
 	}
@@ -729,57 +974,146 @@ bool monster::golemSoldierHit(MONSTER_TYPE monType, MONSTER_DIRECTION monDirect)
 
 bool monster::slimeGauntletHit(MONSTER_TYPE monType, MONSTER_DIRECTION monDirect)
 {
+	//Ã¼·Â±ð±â
 	hitCount++;
 	if (hitCount > 20)
 	{
 		RECT temp;
 
-		if (IntersectRect(&temp, &hRc, &PLAYER->getPlayercollision()))
+		if (IntersectRect(&temp, &hRc, &PLAYER->getattacksword()))
 		{
 			_currentHp = _currentHp - 10;
 		}
+		
 		hitCount = 0;
+		for (int i = 0; i < PLAYER->getweapon()->getvarrow().size(); i++)
+		{
+			if (IntersectRect(&temp, &hRc, &PLAYER->getweapon()->getvarrow()[i]._rc))
+			{
+				_currentHp = _currentHp - 50;
+				PLAYER->getweapon()->remove(i);
+				break;
+			}
+		}
 	}
 	return false;
-}
+	}
+
 
 bool monster::golemBossHit(MONSTER_TYPE monType, MONSTER_DIRECTION monDirect)
 {
+	//Ã¼·Â±ð±â
 	hitCount++;
 	if (hitCount > 20)
 	{
 		RECT temp;
 
-		if (IntersectRect(&temp, &hRc, &PLAYER->getPlayercollision()))
+		if (IntersectRect(&temp, &hRc, &PLAYER->getattacksword()))
 		{
 			_currentHp = _currentHp - 10;
 		}
+		for (int i = 0; i < PLAYER->getweapon()->getvarrow().size(); i++)
+		{
+			if (IntersectRect(&temp, &hRc, &PLAYER->getweapon()->getvarrow()[i]._rc))
+			{
+				_currentHp = _currentHp - 50;
+				PLAYER->getweapon()->remove(i);
+				break;
+			}
+		}
 		hitCount = 0;
 	}
+
 	return false;
 }
 
+
 bool monster::golemTurretDie(MONSTER_TYPE monType)
 {
-	/*item.setRect(_currentX, _currentY);
-	item.setMove(true);*/
-
+	if (deadCount == 0) {
+		iRc = RectMakeCenter(iRc.left - 50, iRc.top - 50, iRc.right - iRc.left, iRc.bottom - iRc.top);
+		_monsterImg = IMAGEMANAGER->findImage("¸ó½ºÅÍÁ×À½");
+		_ani = ANIMATIONMANAGER->findAnimation("¸ó½ºÅÍÁÖ±Ý");
+		_ani->start();
+	}
+	deadCount++;
+	if (deadCount >= 3) {
+		_monState = MONSTER_STATE_DEAD;
+	}
 	return false;
 }
 
 bool monster::golemSoldierDie(MONSTER_TYPE monType)
 {
+	if (deadCount == 0) {
+		_monsterImg = IMAGEMANAGER->findImage("¸ó½ºÅÍÁ×À½");
+		_ani = ANIMATIONMANAGER->findAnimation("¸ó½ºÅÍÁÖ±Ý");
+		_ani->start();
+	}
+	deadCount++;
+	if (deadCount >= 10) {
+		_monState = MONSTER_STATE_DEAD;
+	}
+	return false;
+}
 
+bool monster::flyingGolemDie(MONSTER_TYPE monType)
+{
+	if (deadCount == 0) {
+		iRc = RectMakeCenter(iRc.left, iRc.top, iRc.right - iRc.left, iRc.bottom - iRc.top);
+		_monsterImg = IMAGEMANAGER->findImage("¸ó½ºÅÍÁ×À½");
+		_ani = ANIMATIONMANAGER->findAnimation("¸ó½ºÅÍÁÖ±Ý");
+		_ani->start();
+	}
+	deadCount++;
+	if (deadCount >= 10) {
+		_monState = MONSTER_STATE_DEAD;
+	}
+	return false;
+}
+
+bool monster::slimeDie(MONSTER_TYPE monType)
+{
+	if (deadCount == 0) {
+		iRc = RectMakeCenter(iRc.left, iRc.top, iRc.right - iRc.left, iRc.bottom - iRc.top);
+
+		_monsterImg = IMAGEMANAGER->findImage("¸ó½ºÅÍÁ×À½");
+		_ani = ANIMATIONMANAGER->findAnimation("¸ó½ºÅÍÁÖ±Ý");
+		_ani->start();
+	}
+	deadCount++;
+	if (deadCount >= 10) {
+		_monState = MONSTER_STATE_DEAD;
+	}
 	return false;
 }
 
 bool monster::slimeGauntletDie(MONSTER_TYPE monType)
 {
+	if (deadCount == 0) {
+		iRc = RectMakeCenter(iRc.left + 280, iRc.top + 280, iRc.right - iRc.left, iRc.bottom - iRc.top);
+		_monsterImg = IMAGEMANAGER->findImage("¸ó½ºÅÍÁ×À½");
+		_ani = ANIMATIONMANAGER->findAnimation("¸ó½ºÅÍÁÖ±Ý");
+		_ani->start();
+	}
+	deadCount++;
+	if (deadCount >= 10) {
+		_monState = MONSTER_STATE_DEAD;
+	}
 	return false;
 }
 
 bool monster::golemBossDie(MONSTER_TYPE monType)
 {
+	if (deadCount == 0) {
+		_monsterImg = IMAGEMANAGER->findImage("¸ó½ºÅÍÁ×À½");
+		_ani = ANIMATIONMANAGER->findAnimation("¸ó½ºÅÍÁÖ±Ý");
+		_ani->start();
+	}
+	deadCount++;
+	if (deadCount >= 10) {
+		_monState = MONSTER_STATE_DEAD;
+	}
 	return false;
 }
 

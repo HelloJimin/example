@@ -8,7 +8,8 @@ introScene::~introScene(){}
 HRESULT introScene::init()
 {
 	butoonInit();
-
+	SOUNDMANAGER->play("인트로브금", 1);
+	
 	backGround = IMAGEMANAGER->findImage("인트로배경");
 	backGround->setFrameY(0);
 
@@ -33,8 +34,6 @@ void introScene::update()
 {
 	buttonSelect();
 
-
-
 	count++;
 
 	if (count % 10 == 0)
@@ -48,13 +47,13 @@ void introScene::update()
 	}
 
 	backGround->setFrameX(index);
-
 }
 
 void introScene::render()
 {
 
 	backGround->frameRender(getMemDC(), 0, 0);
+
 	logo->render(getMemDC(), logoRc.left, logoRc.top);
 
 	if (KEYMANAGER->isToggleKey(VK_TAB))
@@ -96,7 +95,8 @@ void introScene::buttonSelect()
 			{
 				if (i == 0)
 				{
-					SCENEMANAGER->changeScene("던전씬");
+					SOUNDMANAGER->stop(SOUNDMANAGER->getCurrentSong());
+					SCENEMANAGER->changeScene("마을씬");
 				}
 				else if (i == 1)
 				{

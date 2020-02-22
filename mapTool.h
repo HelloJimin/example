@@ -33,19 +33,24 @@ class mapTool : public gameNode
 {
 private:
 	tagTile _tiles[TILEX * TILEY];
+	tagTile _temp[TILEX * TILEY];
 	tagSampleTile _sampleTile[SAMPLETILEX * SAMPLETILEY];
 	tagCurrentTile _currnetTile;
 
 	tagSampleBook _sampleBook;
 
+	
 	tagBottun bottun[4];
 
 	RECT rc[8];
+	RECT saveLoad[8];
+	image* saveLoadImg_Dungeon[4];
+	image* saveLoadImg_Village[4];
 
 	int page;
-		//페이지 1~7 던전
-		//페이지 8~14 마을
-		//페이지 15~16 세이브로드
+	//페이지 1~7 던전
+	//페이지 8~14 마을
+	//페이지 15~16 세이브로드
 	image* sampleImage[8]; // 페이지에 맞춰서 뿔려줄 이미지
 	bool first;
 	bool mouse;

@@ -22,6 +22,17 @@ HRESULT mapTool::init()
 	//페이지 15~16 세이브로드
 	first = false;
 	mouse = false;
+
+	for (int i = 0; i < 4; i++)
+	{	
+		saveLoad[i] = RectMakeCenter(WINSIZEX / 2 - 250 + (i % 2 * 110), WINSIZEY / 2+50 + (i / 2 *110), 100, 100);
+		saveLoadImg_Dungeon[i] = IMAGEMANAGER->findImage("던전저장버튼");
+	}
+	for (int i = 4; i < 8; i++)
+	{
+		saveLoad[i] = RectMakeCenter(WINSIZEX / 2 + 150 + (i % 2 * 110), WINSIZEY / 2 - 170 + (i / 2 * 110), 100, 100);
+		saveLoadImg_Village[i-4] = IMAGEMANAGER->findImage("마을저장버튼");
+	}
 	return S_OK;
 }
 
@@ -64,11 +75,11 @@ void mapTool::render()
 		if (CAMERAX - 100 < _tiles[i].x && _tiles[i].x < CAMERAX + WINSIZEX + 100 && CAMERAY - 100 < _tiles[i].y&& _tiles[i].y < CAMERAY + WINSIZEY + 100)
 		{
 			if (_tiles[i].terrain == TERAIN_NONE) Rectangle(getMemDC(), _tiles[i].rc.left, _tiles[i].rc.top, _tiles[i].rc.right, _tiles[i].rc.bottom);
-			else IMAGEMANAGER->frameRender("맵툴던전", getMemDC(), _tiles[i].rc.left, _tiles[i].rc.top, _tiles[i].terrainFrameX, _tiles[i].terrainFrameY);
+			else IMAGEMANAGER->frameRender("맵툴", getMemDC(), _tiles[i].rc.left, _tiles[i].rc.top, _tiles[i].terrainFrameX, _tiles[i].terrainFrameY);
 
 			if (_tiles[i].obj == OBJ_NONE) continue;
 
-			IMAGEMANAGER->frameRender("맵툴던전", getMemDC(), _tiles[i].rc.left, _tiles[i].rc.top, _tiles[i].objFrameX, _tiles[i].objFrameY);
+			IMAGEMANAGER->frameRender("맵툴", getMemDC(), _tiles[i].rc.left, _tiles[i].rc.top, _tiles[i].objFrameX, _tiles[i].objFrameY);
 		}
 	}
 
@@ -132,21 +143,86 @@ void mapTool::render()
 			{
 				bottun[i].img->render(CAMERAMANAGER->getCameraDC(), bottun[i].rc.left, bottun[i].rc.top);
 			}
+			for (int i = 0; i < 4; i++)
+			{
+				saveLoadImg_Dungeon[i]->render(CAMERAMANAGER->getCameraDC(), saveLoad[i].left, saveLoad[i].top);
+			}
+			for (int i = 4; i < 8; i++)
+			{
+				saveLoadImg_Village[i-4]->render(CAMERAMANAGER->getCameraDC(), saveLoad[i].left, saveLoad[i].top);
+			}
 		}
 	}
-
 }
 
 //세이브
 void mapTool::save()
 {
+	for (int i = 0; i < 8; i++)
+	{
+		if (PtInRect(&saveLoad[i], m_ptMouse) && KEYMANAGER->isOnceKeyDown(VK_RBUTTON))
+		{
+			HANDLE file;
+			DWORD write;
+			int arrNum;
+			arrNum = i;
+			char save[128];
+			wsprintf(save, "save/맵%d.map", arrNum + 1);
 
+			for (int i = 0; i < TILEX* TILEY; i++)
+			{
+				_temp[i] = _tiles[i];
+			}
+			
+			file = CreateFile
+			(save,				//생성할 파일또는 열 장치나 파일이름
+				GENERIC_WRITE,			//파일이나 장치를 만들거나 열때 사용할 권한
+				0,						//파일 공유 모드입력
+				NULL,					//파일또는 장치를 열때 보안 및 특성
+				CREATE_ALWAYS,			//파일이나 장치를 열때 취할 행동
+				FILE_ATTRIBUTE_NORMAL,  //파일이나 장치를 열때 갖게 될 특성
+				NULL);					//만들어질 파일이 갖게 될 특성 확장 특성에 대한 정보
+
+			WriteFile(file, _temp, sizeof(tagTile) * TILEX * TILEY, &write, NULL);
+			CloseHandle(file);
+		}
+
+	}
 }
 
 //로드
 void mapTool::load()
 {
+	for (int i = 0; i < 8; i++)
+	{
+		if (PtInRect(&saveLoad[i], m_ptMouse) && KEYMANAGER->isOnceKeyDown(VK_RBUTTON))
+		{
 
+			HANDLE file;
+			DWORD read;
+			int arrNum;
+			arrNum = i;
+			char save[128];
+			wsprintf(save, "save/맵%d.map", arrNum + 1);
+
+			file = CreateFile
+			(save,			//생성할 파일또는 열 장치나 파일이름
+				GENERIC_READ,		//파일이나 장치를 만들거나 열때 사용할 권한
+				0,					//파일 공유 모드입력
+				NULL,				//파일또는 장치를 열때 보안 및 특성
+				OPEN_EXISTING,		//파일이나 장치를 열때 취할 행동
+				FILE_ATTRIBUTE_NORMAL, //파일이나 장치를 열때 갖게 될 특성
+				NULL);				//만들어질 파일이 갖게 될 특성 확장 특성에 대한 정보
+
+			ReadFile(file, _temp, sizeof(tagTile) * TILEX * TILEY, &read, NULL);
+			CloseHandle(file);
+
+			for (int i = 0; i < TILEX* TILEY; i++)
+			{
+				_tiles[i] = _temp[i];
+			}
+		}
+	}
 }
 
 //카메라 이동
@@ -312,10 +388,10 @@ void mapTool::controlSampleBook()
 
 	if (!_sampleBook.Summons) page = 0;
 
-	if (page > 0 ) _select = TRRAINDRAW;
+	if (page > 0) _select = TRRAINDRAW;
 	if (page > 2 && page < 8) _select = OBJDRAW;
 	if (page >= 8 && page < 13) _select = TRRAINDRAW;
-	if (page >=13  && page < 15) _select = OBJDRAW;
+	if (page >= 13 && page < 15) _select = OBJDRAW;
 
 	if (KEYMANAGER->isOnceKeyDown('H')) _select = ERASER;
 
@@ -494,7 +570,7 @@ void mapTool::setSampleBookBottun()
 			bottun[i].rc = RectMakeCenter(bottun[i].x + i * 200, bottun[i].y, bottun[i].img->getWidth(), bottun[i].img->getHeight());
 		}
 	}
-	else if (page >= 8  && page < 13)
+	else if (page >= 8 && page < 13)
 	{
 		bottun[0].img = IMAGEMANAGER->findImage("마을");
 		bottun[1].img = IMAGEMANAGER->findImage("세이브");
@@ -540,11 +616,10 @@ void mapTool::setSampleBookBottun()
 			bottun[i].rc = RectMakeCenter(bottun[i].x + i * 200, bottun[i].y, bottun[i].img->getWidth(), bottun[i].img->getHeight());
 		}
 	}
-	else if (page == 15)
+	else if (page == 15) //세이브
 	{
 		bottun[0].img = IMAGEMANAGER->findImage("세이브");
 		bottun[1].img = IMAGEMANAGER->findImage("로드");
-
 		for (int i = 0; i < 2; i++)
 		{
 			if (i == 0)
@@ -560,8 +635,9 @@ void mapTool::setSampleBookBottun()
 			}
 			bottun[i].rc = RectMakeCenter(bottun[i].x + i * 200, bottun[i].y, bottun[i].img->getWidth(), bottun[i].img->getHeight());
 		}
+		save();
 	}
-	else if (page == 16)
+	else if (page == 16) //로드
 	{
 		bottun[0].img = IMAGEMANAGER->findImage("로드");
 		bottun[1].img = IMAGEMANAGER->findImage("세이브");
@@ -581,6 +657,8 @@ void mapTool::setSampleBookBottun()
 			}
 			bottun[i].rc = RectMakeCenter(bottun[i].x + i * 200, bottun[i].y, bottun[i].img->getWidth(), bottun[i].img->getHeight());
 		}
+
+		load();
 	}
 }
 //샘플북 조종 버튼
@@ -594,7 +672,7 @@ void mapTool::sampleBookBottunControl()
 			{
 				if (i == 0) page = 1;
 				if (i == 1) page = 8;
-					
+
 				if (i == 2) page = 15;
 				if (i == 3) page = 16;
 			}
@@ -783,14 +861,14 @@ void mapTool::setPageSample()
 		//페이지 추가하느곳
 		else if (page == 6)
 		{
-			if (i <4)
+			if (i < 4)
 			{
 				sampleImage[i]->setFrameX(i);
 				sampleImage[i]->setFrameY(4);
 			}
 			else
 			{
-				sampleImage[i]->setFrameX(i-4);
+				sampleImage[i]->setFrameX(i - 4);
 				sampleImage[i]->setFrameY(5);
 			}
 		}
@@ -798,7 +876,7 @@ void mapTool::setPageSample()
 		{
 			if (i < 4)
 			{
-				sampleImage[i]->setFrameX(i+4);
+				sampleImage[i]->setFrameX(i + 4);
 				sampleImage[i]->setFrameY(4);
 			}
 			else
@@ -829,7 +907,7 @@ void mapTool::setPageSample()
 			}
 			else
 			{
-				sampleImage[i]->setFrameX(i-4);
+				sampleImage[i]->setFrameX(i - 4);
 				sampleImage[i]->setFrameY(8);
 			}
 		}
@@ -842,7 +920,7 @@ void mapTool::setPageSample()
 			}
 			else
 			{
-				sampleImage[i]->setFrameX(i-4);
+				sampleImage[i]->setFrameX(i - 4);
 				sampleImage[i]->setFrameY(10);
 			}
 		}
@@ -850,7 +928,7 @@ void mapTool::setPageSample()
 		{
 			if (i < 4)
 			{
-				sampleImage[i]->setFrameX(i+4);
+				sampleImage[i]->setFrameX(i + 4);
 				sampleImage[i]->setFrameY(7);
 			}
 			else
@@ -881,7 +959,7 @@ void mapTool::setPageSample()
 			}
 			else
 			{
-				sampleImage[i]->setFrameX(i+4);
+				sampleImage[i]->setFrameX(i + 4);
 				sampleImage[i]->setFrameY(7);
 			}
 		}
@@ -914,7 +992,7 @@ void mapTool::setMap()
 				_tiles[i].terrainFrameX = _currnetTile.x;
 				_tiles[i].terrainFrameY = _currnetTile.y;
 
-				if(page<8) _tiles[i].terrain = dungeonTerrainSelect(_currnetTile.x, _currnetTile.y);
+				if (page < 8) _tiles[i].terrain = dungeonTerrainSelect(_currnetTile.x, _currnetTile.y);
 				else _tiles[i].terrain = villageTerrainSelect(_currnetTile.x, _currnetTile.y);
 			}
 			if (_select == OBJDRAW)
@@ -1073,7 +1151,7 @@ OBJECT mapTool::dungeonObjSelect(int frameX, int frameY)
 			}
 
 			//문 오브젝트
-			if (i >= 8 && j >= 0 && j<=1)
+			if (i >= 8 && j >= 0 && j <= 1)
 			{
 				if (frameX == i && frameY == j) return OBJ_DOOR;
 			}
@@ -1082,18 +1160,18 @@ OBJECT mapTool::dungeonObjSelect(int frameX, int frameY)
 			{
 				if (frameX == i && frameY == j) return OBJ_JAR;
 			}
-			
+
 			//기둥
 			if (i == 6 && j == 0) return OBJ_PILLAR;
 
-			if (i >= 0 && i <= 7 && j >= 4 && j <=5)
+			if (i >= 0 && i <= 7 && j >= 4 && j <= 5)
 			{
 				return OBJ_HELL_SPA;
 			}
 
 			if (i == 7 && j == 0) return OBJ_BOX;
 
-			if (i >= 4 && i<=6 && j >= 2 && j <= 3) return OBJ_TENT;
+			if (i >= 4 && i <= 6 && j >= 2 && j <= 3) return OBJ_TENT;
 		}
 	}
 
@@ -1123,17 +1201,17 @@ OBJECT mapTool::villageObjSelect(int frameX, int frameY)
 		for (int j = 6; j < 11; j++)
 		{
 			//오브젝트 나무+우물
-			if (i >= 9 && j >= 6 && j<=7)
+			if (i >= 9 && j >= 6 && j <= 7)
 			{
 				if (frameX == i && frameY == j) return OBJ_WALL;
 			}
 			//오브젝트 나무
-			if (i >= 9 && i<=10 && j >= 8 && j <= 9)
+			if (i >= 9 && i <= 10 && j >= 8 && j <= 9)
 			{
 				if (frameX == i && frameY == j) return OBJ_WALL;
 			}
 			//오브젝트 의자
-			if (i == 12 && j == 9 )
+			if (i == 12 && j == 9)
 			{
 				if (frameX == i && frameY == j) return OBJ_WALL;
 			}
